@@ -155,10 +155,4 @@ The server will start at:
 
 ---
 
-If you want, I can also:
-- Replace placeholders with your actual Render/GitHub URLs
-- Optimize this README for ATS or evaluation rubrics
-- Add API error cases and edge-case examples
-
-Just say the word.
 ```
