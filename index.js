@@ -8,30 +8,20 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// --- CRITICAL CONFIGURATION ---
-// STRICTLY REQUIRED BY DOCUMENT [cite: 40]
-const OFFICIAL_EMAIL = "harshit0685.be23@chitkara.edu.in"; 
+const OFFICIAL_EMAIL = "harshit0685.be23@chitkara.edu.in";
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-// --- STRICT LOGIC IMPLEMENTATIONS ---
-
-//  Fibonacci: Returns series up to N
 const getFibonacci = (n) => {
-    // Boundary Condition: Negative or Zero
     if (typeof n !== 'number' || n <= 0) return [];
     if (n === 1) return [0];
-    
     let sequence = [0, 1];
     while (sequence.length < n) {
         let next = sequence[sequence.length - 1] + sequence[sequence.length - 2];
         sequence.push(next);
     }
-    return sequence; // Returns exactly 'n' elements as per example [cite: 53]
+    return sequence;
 };
 
-//  Prime: Filters array for primes
 const isPrime = (num) => {
     if (typeof num !== 'number' || num < 2) return false;
     for (let i = 2; i <= Math.sqrt(num); i++) {
@@ -40,7 +30,6 @@ const isPrime = (num) => {
     return true;
 };
 
-//  HCF (GCD)
 const getGCD = (a, b) => {
     return b === 0 ? a : getGCD(b, a % b);
 };
@@ -54,7 +43,6 @@ const getHCF = (arr) => {
     return result;
 };
 
-//  LCM
 const getLCM = (arr) => {
     if (!Array.isArray(arr) || arr.length === 0) return null;
     let result = arr[0];
@@ -65,30 +53,21 @@ const getLCM = (arr) => {
     return result;
 };
 
-//  AI: Single word response
 const getAIResponse = async (question) => {
     try {
         if (!process.env.GEMINI_API_KEY) return "API_KEY_MISSING";
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        
-        // STRICT PROMPT ENGINEERING for "Single-word AI response" 
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const prompt = `Answer the following question with strictly one single word. Do not write a sentence. Question: ${question}`;
-        
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        
-        // Sanitize to ensure single word
-        return text.trim().split(/\s+/)[0]; 
+        return text.trim().split(/\s+/)[0];
     } catch (error) {
         console.error("AI Error:", error);
         return "AI_ERROR";
     }
 };
 
-// --- ROUTES ---
-
-// 1. GET /health [cite: 23, 94]
 app.get('/health', (req, res) => {
     res.status(200).json({
         "is_success": true,
@@ -96,46 +75,35 @@ app.get('/health', (req, res) => {
     });
 });
 
-// 2. POST /bfhl [cite: 22, 30]
 app.post('/bfhl', async (req, res) => {
     try {
         const body = req.body;
-        
-        // STRICT INPUT VALIDATION [cite: 11]
         if (!body || Object.keys(body).length === 0) {
             throw new Error("Empty request body");
         }
 
         let responseData = null;
 
-        // Logic Mapping 
         if ("fibonacci" in body) {
             const n = parseInt(body.fibonacci);
             if (isNaN(n)) throw new Error("Invalid Integer for fibonacci");
             responseData = getFibonacci(n);
-        } 
-        else if ("prime" in body) {
+        } else if ("prime" in body) {
             if (!Array.isArray(body.prime)) throw new Error("Invalid Array for prime");
             responseData = body.prime.filter(num => isPrime(num));
-        } 
-        else if ("lcm" in body) { // Table says "lcm" 
+        } else if ("lcm" in body) {
             if (!Array.isArray(body.lcm)) throw new Error("Invalid Array for lcm");
             responseData = getLCM(body.lcm);
-        }
-        else if ("1cm" in body) { // SAFETY: Handling potential typo in PDF example [cite: 66]
+        } else if ("1cm" in body) {
             if (!Array.isArray(body["1cm"])) throw new Error("Invalid Array for lcm");
             responseData = getLCM(body["1cm"]);
-        } 
-        else if ("hcf" in body) {
+        } else if ("hcf" in body) {
             if (!Array.isArray(body.hcf)) throw new Error("Invalid Array for hcf");
             responseData = getHCF(body.hcf);
-        } 
-        else if ("AI" in body) {
+        } else if ("AI" in body) {
             if (typeof body.AI !== 'string') throw new Error("Invalid String for AI");
             responseData = await getAIResponse(body.AI);
-        } 
-        else {
-            // Unknown key - Strict failure
+        } else {
             return res.status(400).json({
                 "is_success": false,
                 "official_email": OFFICIAL_EMAIL,
@@ -143,7 +111,6 @@ app.post('/bfhl', async (req, res) => {
             });
         }
 
-        // STRICT RESPONSE STRUCTURE [cite: 36-41]
         res.json({
             "is_success": true,
             "official_email": OFFICIAL_EMAIL,
@@ -151,7 +118,6 @@ app.post('/bfhl', async (req, res) => {
         });
 
     } catch (error) {
-        // GRACEFUL ERROR HANDLING [cite: 12]
         console.error(error);
         res.status(400).json({
             "is_success": false,
@@ -159,6 +125,14 @@ app.post('/bfhl', async (req, res) => {
             "message": error.message || "Internal Server Error"
         });
     }
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 const PORT = process.env.PORT || 3000;
